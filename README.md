@@ -3,7 +3,7 @@ YouTube Playlist Downloader &amp; Organizer
 
 1) Install requirements (ffmpeg could take a while to fully install, and is necessary for iTunes):
 ```
-$ pip install -r /path/to/requirements.txt
+$ pip install -r requirements.txt
 $ brew install ffmpeg
 ```
 2) Copy the sample settings file:

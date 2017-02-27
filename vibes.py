@@ -11,7 +11,6 @@ from vibes_settings import vibes_settings
 # TODO: Try-catch blocks
 # TODO: Cut down on API response size via fields/part params
 # TODO: %s -> string.format?
-# TODO: How to not rewrite library for every video?
 # TODO: Limited to 50 playlists for now
 # TODO: What if video not available
 # TODO: THUMBNAILS!
@@ -21,7 +20,6 @@ class Vibes(object):
     self.YT_CHANNEL_ID = vibes_settings["YT_CHANNEL_ID"]
     self.PLAYLISTS_URL = "https://www.googleapis.com/youtube/v3/playlists?key=%s&part=snippet&maxResults=50&channelId=%s" % (self.YT_API_KEY, self.YT_CHANNEL_ID)
     self.PLAYLISTITEMS_URL = "https://www.googleapis.com/youtube/v3/playlistItems?key=%s&part=snippet&maxResults=50&playlistId=" % self.YT_API_KEY
-    self.VIDEO_URL = "https://www.youtube.com/watch?v="
     self.MAIN_FOLDER_PATH = vibes_settings["MAIN_FOLDER_PATH"]
     self.LIBRARY_PATH = self.MAIN_FOLDER_PATH + "/lib.json"
     pafy.set_api_key(self.YT_API_KEY)
@@ -69,7 +67,7 @@ class Vibes(object):
           if video_id in library[playlist_id]["items"]: continue
 
           # Create Pafy object, extract audio, and download audio
-          pafy_object = pafy.new(self.VIDEO_URL + video_id, basic=False)
+          pafy_object = pafy.new(video_id, basic=False)
           audio = pafy_object.getbestaudio(preftype="m4a")
           # remux_audio necessary to play on iTunes
           # Requires ffmpeg installed

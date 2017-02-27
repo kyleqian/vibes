@@ -24,6 +24,7 @@ class Vibes(object):
     self.VIDEO_URL = "https://www.youtube.com/watch?v="
     self.MAIN_FOLDER_PATH = vibes_settings["MAIN_FOLDER_PATH"]
     self.LIBRARY_PATH = self.MAIN_FOLDER_PATH + "/lib.json"
+    pafy.set_api_key(self.YT_API_KEY)
 
   def audio_download(self):
     # Creates main folder
@@ -67,9 +68,12 @@ class Vibes(object):
           # Skip if already in library
           if video_id in library[playlist_id]["items"]: continue
 
-          pafy_object = pafy.new(self.VIDEO_URL + video_id)
+          # Create Pafy object, extract audio, and download audio
+          pafy_object = pafy.new(self.VIDEO_URL + video_id, basic=False)
           audio = pafy_object.getbestaudio(preftype="m4a")
-          audio.download(quiet=True, filepath=curr_playlist_path)
+          # remux_audio necessary to play on iTunes
+          # Requires ffmpeg installed
+          audio.download(quiet=True, filepath=curr_playlist_path, remux_audio=True)
 
           # Update library file
           library[playlist_id]["items"][video_id] = video_title

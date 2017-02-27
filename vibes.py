@@ -7,6 +7,7 @@ import pafy
 import pdb
 import shutil
 from time import sleep
+from mutagen.mp4 import MP4, MP4Cover
 from vibes_settings import vibes_settings
 
 # TODO: Try-catch blocks
@@ -14,10 +15,6 @@ from vibes_settings import vibes_settings
 # TODO: %s -> string.format?
 # TODO: Limited to 50 playlists for now
 # TODO: What if video not available
-# TODO: Create temporary staging directory where new audio files are downloaded along with artwork, combine them there, then
-# TODO: http://stackoverflow.com/questions/23301256/python-mutagen-add-cover-photo-album-art-by-url
-# TODO: After that, move to main directory and clean up staging, remove staging directory at the very end
-# TODO: https://img.youtube.com/vi/<insert-youtube-video-id-here>/maxresdefault.jpg
 # TODO: Hacky .replace?
 class Vibes(object):
   def __init__(self):
@@ -27,6 +24,7 @@ class Vibes(object):
     self.PLAYLISTITEMS_URL = "https://www.googleapis.com/youtube/v3/playlistItems?key=%s&part=snippet&maxResults=50&playlistId=" % self.YT_API_KEY
     self.MAIN_DIR_PATH = vibes_settings["MAIN_DIR_PATH"]
     self.LIBRARY_PATH = self.MAIN_DIR_PATH + "/lib.json"
+    self.COVER_ART_URL = "https://img.youtube.com/vi/%s/maxresdefault.jpg"
     pafy.set_api_key(self.YT_API_KEY)
 
   def pull(self):
@@ -73,11 +71,21 @@ class Vibes(object):
           # Skip if already in library
           if video_id in library[playlist_id]["items"]: continue
 
-          # Create Pafy object and grab audio
+          # Create Pafy object and download audio
           pafy_object = pafy.new(video_id, basic=False)
+          audio_stream = pafy_object.getbestaudio(preftype="m4a")
 
-          # Assemble and download file and metadata
-          self.__process_pafy(pafy_object)
+          # Download audio file to assembler directory
+          # remux_audio necessary to play on iTunes
+          # >>> Requires ffmpeg installed <<<
+          file_path = audio_stream.download(quiet=True, filepath=curr_assembler_path, remux_audio=True)
+
+          # Assemble metadata
+          self.__assemble(pafy_object, file_path)
+
+          # Move assembled file into parent directory and clear assembler
+          shutil.move(file_path, file_path.replace("/assembler", ""))
+          self.__clear_dir(curr_assembler_path)
 
           # Update library file
           library[playlist_id]["items"][video_id] = video_title
@@ -101,21 +109,17 @@ class Vibes(object):
 
       # log.close()
 
-  def __process_pafy(self, pafy_object):
-    # Get audio stream from Pafy
-    audio = pafy_object.getbestaudio(preftype="m4a")
+  def __assemble(self, pafy_object, file_path):
+    # Open audio file with Mutagen and assemble metadata
+    audio_file = MP4(file_path)
+    audio_file["\xa9cmt"] = pafy_object.videoid
 
-    # Download audio file to assembler directory
-    # remux_audio necessary to play on iTunes
-    # >>> Requires ffmpeg installed <<<
-    file_path = audio.download(quiet=True, filepath=curr_assembler_path, remux_audio=True)
+    # Cover art
+    cover_art = requests.get(self.COVER_ART_URL % pafy_object.videoid)
+    audio_file["covr"] = [MP4Cover(cover_art.content, MP4Cover.FORMAT_JPEG)]
 
-    # Assemble audio file with metadata
-    pass
-
-    # Move assembled file into parent directory and clear assembler
-    shutil.move(file_path, file_path.replace("/assembler"))
-    self.__clear_dir(curr_assembler_path)
+    # Save metadata
+    audio_file.save()
 
   # Creates directory; defaults to playlist
   def __create_dir(self, path, dirtype="playlist"):
@@ -152,6 +156,6 @@ class Vibes(object):
       if exception.errno != errno.EEXIST:
         raise
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   V = Vibes()
   V.pull()

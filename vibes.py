@@ -9,7 +9,6 @@ from time import sleep
 from vibes_settings import vibes_settings
 
 # TODO: Try-catch blocks
-# TODO: Audio download assumes that audiostreams are ordered high quality first (takes the first m4a)
 # TODO: Cut down on API response size via fields/part params
 # TODO: %s -> string.format?
 # TODO: How to not rewrite library for every video?
@@ -68,21 +67,23 @@ class Vibes(object):
           # Skip if already in library
           if video_id in library[playlist_id]["items"]: continue
 
-          video = pafy.new(self.VIDEO_URL + video_id)
-          for audio in video.audiostreams:
-            if audio.extension == 'm4a':
-              audio.download(quiet=True, filepath=curr_playlist_path)
+          pafy_object = pafy.new(self.VIDEO_URL + video_id)
+          audio = pafy_object.getbestaudio(preftype="m4a")
+          audio.download(quiet=True, filepath=curr_playlist_path)
 
-              library[playlist_id]["items"][video_id] = video_title
-              with open(self.LIBRARY_PATH, "w") as lib:
-                lib.write(json.dumps(library, indent=2, sort_keys=True))
+          # Update library file
+          library[playlist_id]["items"][video_id] = video_title
+          with open(self.LIBRARY_PATH, "w") as lib:
+            lib.write(json.dumps(library, indent=2, sort_keys=True))
 
-              counter += 1
-              data = "%s|||%s|||%s|||%d" % (video_id, video_title, audio.bitrate, counter)
-              # log.write(data + os.linesep)
-              print data
-              sleep(10)
-              break
+          # Console log
+          counter += 1
+          data = "%s || %s || %d" % (video_id, video_title, counter)
+          print data
+          # log.write(data + os.linesep)
+
+          # Sleep in case of rate limiting
+          # sleep(5)
 
         # No more videos
         if page_token == "": break
@@ -94,6 +95,8 @@ class Vibes(object):
     except OSError as exception:
       if exception.errno != errno.EEXIST:
         raise
+
+    # Create library file if it doesn't yet exist
     if main and os.path.isfile(self.LIBRARY_PATH) == False:
         with open(self.LIBRARY_PATH, "w") as lib:
           lib.write("{}")

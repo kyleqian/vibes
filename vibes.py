@@ -16,6 +16,9 @@ from vibes_settings import vibes_settings
 # TODO: Limited to 50 playlists for now
 # TODO: What if video not available
 # TODO: Hacky .replace?
+# TODO: Stop script if can't remux!!
+# TODO: Mark audio from playlist somewhere, like in albums
+# TODO: What if thumbnail not available? You get ugly gray image
 class Vibes(object):
   def __init__(self):
     self.YT_API_KEY = vibes_settings["YT_API_KEY"]
@@ -25,7 +28,7 @@ class Vibes(object):
     self.MAIN_DIR_PATH = vibes_settings["MAIN_DIR_PATH"]
     self.LIBRARY_PATH = self.MAIN_DIR_PATH + "/lib.json"
     self.COVER_ART_URL = "https://img.youtube.com/vi/%s/maxresdefault.jpg"
-    pafy.set_api_key(self.YT_API_KEY)
+    if self.YT_API_KEY != "": pafy.set_api_key(self.YT_API_KEY)
 
   def pull(self):
     # Create main directory

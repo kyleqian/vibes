@@ -8,5 +8,5 @@ vibes_settings = {
   "YT_API_KEY": "",
 
   # By default saves everything in a main directory on the desktop called Vibes
-  "MAIN_DIR_PATH": os.path.expanduser("~/Desktop/Vibes")
+  "MAIN_DIR_PATH": os.path.expanduser("~/Desktop/VibesMusic")
 }
